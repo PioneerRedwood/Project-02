@@ -77,35 +77,57 @@ int main()
 	cout << "Wating for Connection.. " << endl;
 
 	// Accept connection from Client
-	SOCKET ClientSocket = INVALID_SOCKET;
-	ClientSocket = accept(ListenSocket, NULL, NULL); // 
-	if (ClientSocket == INVALID_SOCKET)
+	sockaddr_in client;
+	int clientSize = sizeof(client);
+
+	SOCKET clientSocket = accept(ListenSocket, (sockaddr*)&client, &clientSize);
+	if (clientSocket == INVALID_SOCKET)
 	{
 		cout << "accept faild: " << WSAGetLastError() << endl;
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
 	}
-	// For accepting from client declare new ClientSocket.
 
-	char recvbuf[DEFAULT_BUFLEN];
+	char host[NI_MAXHOST];
+	char service[NI_MAXSERV];
+
+	ZeroMemory(host, NI_MAXHOST);
+	ZeroMemory(service, NI_MAXSERV);
+
+	if (getnameinfo((sockaddr*)& client, sizeof(client), host, NI_MAXHOST,
+		service, NI_MAXSERV, 0) == 0)
+	{
+		cout << host << " connected on port " << service << endl;
+	}
+	else
+	{
+		inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
+		cout << host << "connected on port " << service << endl;
+	}
+
+	//Close Listeningsocket
+	closesocket(ListenSocket);
+
+
+	// do while: Receving since client shuts down the connection
+	char buf[DEFAULT_BUFLEN];
 	int iSendResult;
-	int recvbuflen = DEFAULT_BUFLEN;
-
-	// Receive until the peer shuts down the connection
+	int bufLen = DEFAULT_BUFLEN;
+	
 	do
 	{
-		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+		iResult = recv(clientSocket, buf, bufLen, 0);
 		if (iResult > 0)
 		{
 			cout << "Bytes received: " << iResult << endl;
 
 			// Echo the buffer back to the sender
-			iSendResult = send(ClientSocket, recvbuf, iResult, 0);
+			iSendResult = send(clientSocket, buf, iResult, 0);
 			if (iSendResult == SOCKET_ERROR)
 			{
 				cout << "send failed: " << WSAGetLastError() << endl;
-				closesocket(ClientSocket);
+				closesocket(clientSocket);
 				WSACleanup();
 				return 1;
 			}
@@ -116,23 +138,23 @@ int main()
 		else
 		{
 			cout << "recv failed: " << WSAGetLastError() << endl;
-			closesocket(ClientSocket);
+			closesocket(clientSocket);
 			WSACleanup();
 			return 1;
 		}
 	} while (iResult > 0);
 
 	// shutdown the send half of the connection since no more data will be sent
-	iResult = shutdown(ClientSocket, SD_SEND);
+	iResult = shutdown(clientSocket, SD_SEND);
 	if (iResult == SOCKET_ERROR)
 	{
 		cout << "shutdown failed: " << WSAGetLastError() << endl;
-		closesocket(ClientSocket);
+		closesocket(clientSocket);
 		WSACleanup();
 		return 1;
 	}
 	// cleanup
-	closesocket(ClientSocket);
+	closesocket(clientSocket);
 	WSACleanup();
 	return 0;
 }
