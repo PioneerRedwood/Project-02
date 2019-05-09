@@ -1,29 +1,38 @@
+// Windows socket 프로그래밍 클라이언트 코드
 #define WIN32_LEAN_AND_MEAN
 
 #include<iostream>
+#include<string>
 #include<ws2tcpip.h>
 #include<winsock2.h>
 using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
 
+#define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "9000"
 
-int main(char** argv)
+int main()
 {
 	WSADATA wsaData;
 	int iResult;
-
-	struct addrinfo* result = NULL, * ptr = NULL, hints;
+	
+	struct addrinfo* result = NULL, *ptr = NULL, hints;
+	
+	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult == INVALID_SOCKET)
+	{
+		cout << "WSAStartup failed: " << WSAGetLastError() << endl;
+		return 1;
+	}
 
 	ZeroMemory(&hints, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-
-	//Resolve the server address and port
-	iResult = getaddrinfo(argv[1], DEFAULT_PORT, &hints, &result);
+	// 서버 주소와 포트를 설정
+	iResult = getaddrinfo("127.0.0.1", DEFAULT_PORT, &hints, &result);
 	if (iResult != 0)
 	{
 		cout << "getaddrinfo failed: " << iResult << endl;
@@ -43,20 +52,59 @@ int main(char** argv)
 		return 1;
 	}
 
-	// Connect to server.
+	// 서버에 연결
 	iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 	if (iResult == SOCKET_ERROR)
 	{
+		cout << "Unable to connect to server!" << endl;
 		closesocket(ConnectSocket);
-		ConnectSocket = INVALID_SOCKET;
+		WSACleanup();
+		return 1;
 	}
 
 	freeaddrinfo(result);
 
-	if (ConnectSocket == INVALID_SOCKET)
+	int recvBufLen = DEFAULT_BUFLEN;
+	char recvBuf[DEFAULT_BUFLEN];
+	string message;
+	
+	// 서버가 연결을 끊을 때까지 데이터 전송
+	do
 	{
-		cout << "Unable to connect to server!" << endl;
+		cout << ">> ";
+		getline(cin, message);
+
+		// 사용자가 무엇이든 입력하면 실행
+		if (message.size() > 0)
+		{
+			// 메시지 전송
+			iResult = send(ConnectSocket, message.c_str(), message.size() + 1, 0);
+			if (iResult != SOCKET_ERROR)
+			{
+				// 응답 대기 및 버퍼 초기화
+				ZeroMemory(recvBuf, DEFAULT_BUFLEN);
+				int bytesRecv = recv(ConnectSocket, recvBuf, DEFAULT_BUFLEN, 0);
+				if (bytesRecv > 0)
+				{
+					// 응답을 콘솔창에 재전송
+					cout << "Server>> " << string(recvBuf, 0, bytesRecv) << endl;
+				}
+			}
+		}
+	} while (message.size() > 0);
+
+	// 더이상 전송할 데이터가 없을 때 소켓 닫기
+	iResult = shutdown(ConnectSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR)
+	{
+		cout << "shutdown failed: " << WSAGetLastError() << endl;
+		closesocket(ConnectSocket);
 		WSACleanup();
 		return 1;
 	}
+
+	// cleanup
+	closesocket(ConnectSocket);
+	WSACleanup();
+	return 0;
 }
