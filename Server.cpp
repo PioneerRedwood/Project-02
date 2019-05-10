@@ -1,9 +1,10 @@
-// Windows socket 프로그래밍 서버 코드
+// Windows socket 프로그래밍 서버 코드 <파일 전송>
 #define WIN32_LEAN_AND_MEAN
 
 #include<winsock2.h>
 #include<ws2tcpip.h>
 #include<iostream>
+#include<filesystem>
 
 #define DEFAULT_PORT "9000"
 #define DEFAULT_BUFLEN 512
@@ -15,7 +16,7 @@ int main()
 {
 	WSADATA wsadata;
 	int iResult;
-	
+
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsadata);
 	if (iResult != 0)
 	{
@@ -76,7 +77,7 @@ int main()
 	sockaddr_in client;
 	int clientSize = sizeof(client);
 
-	SOCKET clientSocket = accept(ListenSocket, (sockaddr*)&client, &clientSize);
+	SOCKET clientSocket = accept(ListenSocket, (sockaddr*)& client, &clientSize);
 	if (clientSocket == INVALID_SOCKET)
 	{
 		cout << "accept faild: " << WSAGetLastError() << endl;
@@ -104,7 +105,9 @@ int main()
 	}
 
 	closesocket(ListenSocket);
-
+	
+	
+	/*
 	// client가 닫을 때까지 전송받기
 	char buf[DEFAULT_BUFLEN];
 	int iSendResult;
@@ -138,6 +141,53 @@ int main()
 			return 1;
 		}
 	} while (iResult > 0);
+	*/
+
+
+	// 파일 전송
+	int success = 0;
+	do
+	{
+		// 전송할 파일 정보
+		const char* fName = "Test.txt";
+		char sendBuf[DEFAULT_BUFLEN];
+		errno_t err;
+		cout << "Server send " << fName << " to the client" << endl;
+
+		// 읽기 전용으로 파일 열기
+		FILE* fp;
+		err = fopen_s(&fp, fName, "r");
+		if (err == 0)
+		{
+			cout << "Open success: " << fName << endl;
+			return 1;
+		}
+		else
+		{
+			cout << "failed opening: " << fName << endl;
+		}
+
+		ZeroMemory(sendBuf, DEFAULT_BUFLEN);
+		int fBlockSize;
+		
+		// 파일 읽으며 전송
+		while (fBlockSize = fread(sendBuf, sizeof(char), DEFAULT_BUFLEN, fp) > 0)
+		{
+			if (send(clientSocket, sendBuf, fBlockSize, 0) < 0)
+			{
+				cout << "Error! failed to send file : " << fName << endl;
+				return 1;
+			}
+			else if (fBlockSize)
+				break;
+			ZeroMemory(sendBuf, DEFAULT_BUFLEN);
+		}
+		cout << "Success!\n";
+		success = 1;
+		closesocket(clientSocket);
+		cout << "Connection closing.. \n";
+		fclose(fp);
+	} while (success > 0);
 
 	// 더이상 전송이 없다면 종료
 	iResult = shutdown(clientSocket, SD_SEND);

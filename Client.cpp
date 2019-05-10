@@ -1,10 +1,11 @@
-// Windows socket 프로그래밍 클라이언트 코드
+// Windows socket 프로그래밍 클라이언트 코드 <파일 전송>
 #define WIN32_LEAN_AND_MEAN
 
 #include<iostream>
 #include<string>
 #include<ws2tcpip.h>
 #include<winsock2.h>
+#include<filesystem>
 using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
@@ -16,9 +17,9 @@ int main()
 {
 	WSADATA wsaData;
 	int iResult;
-	
-	struct addrinfo* result = NULL, *ptr = NULL, hints;
-	
+
+	struct addrinfo* result = NULL, * ptr = NULL, hints;
+
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult == INVALID_SOCKET)
 	{
@@ -64,11 +65,9 @@ int main()
 
 	freeaddrinfo(result);
 
-	int recvBufLen = DEFAULT_BUFLEN;
-	char recvBuf[DEFAULT_BUFLEN];
-	string message;
-	
+	/*
 	// 서버가 연결을 끊을 때까지 데이터 전송
+	string message;
 	do
 	{
 		cout << ">> ";
@@ -92,6 +91,54 @@ int main()
 			}
 		}
 	} while (message.size() > 0);
+	*/
+
+	int recvBufLen = DEFAULT_BUFLEN;
+	char recvBuf[DEFAULT_BUFLEN];
+
+	// 파일 수신
+	const char* fName = "ReceivedTest.txt";
+	FILE* fp;
+	errno_t err;
+	err = fopen_s(&fp, fName, "a");
+
+	if (err == 0)
+	{
+		cout << "Open success: " << fName << endl;
+		return 1;
+	}
+	else
+	{
+		cout << "failed opening: " << fName << endl;
+	}
+
+	ZeroMemory(recvBuf, DEFAULT_BUFLEN);
+	int fBlockSize = 0;
+	int success = 0;
+	do
+	{
+		while (fBlockSize = recv(ConnectSocket, recvBuf, DEFAULT_BUFLEN, 0))
+		{
+			if (fBlockSize < 0)
+			{
+				cout << "Error! Receiving file.\n";
+				break;
+			}
+			else
+			{
+				int writeSize = fwrite(recvBuf, sizeof(char), fBlockSize, fp);
+				if (writeSize < fBlockSize)
+				{
+					cout << "Error! Writing failed.\n";
+					break;
+				}
+			}
+			ZeroMemory(recvBuf, DEFAULT_BUFLEN);
+		}
+		cout << "Success!\n";
+		success = 1;
+		fclose(fp);
+	} while (success == 0);
 
 	// 더이상 전송할 데이터가 없을 때 소켓 닫기
 	iResult = shutdown(ConnectSocket, SD_SEND);
@@ -103,7 +150,7 @@ int main()
 		return 1;
 	}
 
-	// cleanup
+	// 종료
 	closesocket(ConnectSocket);
 	WSACleanup();
 	return 0;
