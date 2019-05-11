@@ -65,80 +65,53 @@ int main()
 
 	freeaddrinfo(result);
 
-	/*
-	// 서버가 연결을 끊을 때까지 데이터 전송
-	string message;
-	do
-	{
-		cout << ">> ";
-		getline(cin, message);
+	char buf[DEFAULT_BUFLEN];
+	int bufLen = DEFAULT_BUFLEN;
 
-		// 사용자가 무엇이든 입력하면 실행
-		if (message.size() > 0)
-		{
-			// 메시지 전송
-			iResult = send(ConnectSocket, message.c_str(), message.size() + 1, 0);
-			if (iResult != SOCKET_ERROR)
-			{
-				// 응답 대기 및 버퍼 초기화
-				ZeroMemory(recvBuf, DEFAULT_BUFLEN);
-				int bytesRecv = recv(ConnectSocket, recvBuf, DEFAULT_BUFLEN, 0);
-				if (bytesRecv > 0)
-				{
-					// 응답을 콘솔창에 재전송
-					cout << "Server>> " << string(recvBuf, 0, bytesRecv) << endl;
-				}
-			}
-		}
-	} while (message.size() > 0);
-	*/
-
-	int recvBufLen = DEFAULT_BUFLEN;
-	char recvBuf[DEFAULT_BUFLEN];
-
-	// 파일 수신
-	const char* fName = "ReceivedTest.txt";
+	// 파일 송신
 	FILE* fp;
 	errno_t err;
-	err = fopen_s(&fp, fName, "a");
+	char fileName[20] = "A.png";
+	err = fopen_s(&fp, fileName, "r");
 
-	if (err == 0)
+	if (err != 0)
 	{
-		cout << "Open success: " << fName << endl;
-		return 1;
-	}
-	else
-	{
-		cout << "failed opening: " << fName << endl;
-	}
-
-	ZeroMemory(recvBuf, DEFAULT_BUFLEN);
-	int fBlockSize = 0;
-	int success = 0;
-	do
-	{
-		while (fBlockSize = recv(ConnectSocket, recvBuf, DEFAULT_BUFLEN, 0))
+		cout << "File open success!: " << fileName << endl;
+		// 파일 크기 계산
+		int iTest = fseek(fp, 0, SEEK_END);
+		if (iTest != 0)
 		{
-			if (fBlockSize < 0)
+			cout << "Error! failed to calculate: " << fileName << "'s Size..\n";
+			return 1;
+		}
+		int count = ftell(fp);		// 파일 크기 저장
+		fseek(fp, 0L, SEEK_SET);	// 파일 포인터 처음으로 옮김
+		while (count >= 0)
+		{
+			// 파일 전송
+			ZeroMemory(buf, bufLen);
+			// 파일 내용을 읽어서 버퍼에 담기
+			fread(buf, sizeof(char), bufLen, fp);
+			// 전송
+			iResult = send(ConnectSocket, buf, bufLen, 0);
+			if (iResult > 0)
 			{
-				cout << "Error! Receiving file.\n";
-				break;
+				cout << "file sending.. ";
+				// 루프 탈출을 위해 버퍼 크기 만큼 카운트 변수를 감소
+				count = count - bufLen;
 			}
+			else if (iResult == 0)
+				cout << "Connection closing.. \n";
 			else
 			{
-				int writeSize = fwrite(recvBuf, sizeof(char), fBlockSize, fp);
-				if (writeSize < fBlockSize)
-				{
-					cout << "Error! Writing failed.\n";
-					break;
-				}
+				cout << "recv failed with error: " << WSAGetLastError() << endl;
+				closesocket(ConnectSocket);
+				WSACleanup();
+				return 1;
 			}
-			ZeroMemory(recvBuf, DEFAULT_BUFLEN);
 		}
-		cout << "Success!\n";
-		success = 1;
-		fclose(fp);
-	} while (success == 0);
+	}
+	
 
 	// 더이상 전송할 데이터가 없을 때 소켓 닫기
 	iResult = shutdown(ConnectSocket, SD_SEND);

@@ -1,10 +1,9 @@
 // Windows socket 프로그래밍 서버 코드 <파일 전송>
-#define WIN32_LEAN_AND_MEAN
-
 #include<winsock2.h>
 #include<ws2tcpip.h>
 #include<iostream>
 #include<filesystem>
+#include<fstream>
 
 #define DEFAULT_PORT "9000"
 #define DEFAULT_BUFLEN 512
@@ -106,88 +105,50 @@ int main()
 
 	closesocket(ListenSocket);
 	
-	
-	/*
-	// client가 닫을 때까지 전송받기
+	// 파일 전송
 	char buf[DEFAULT_BUFLEN];
-	int iSendResult;
 	int bufLen = DEFAULT_BUFLEN;
-	
-	do
-	{
-		iResult = recv(clientSocket, buf, bufLen, 0);
-		if (iResult > 0)
-		{
-			cout << "Bytes received: " << iResult << endl;
 
-			// 보낸 이에게 재전송
-			iSendResult = send(clientSocket, buf, iResult, 0);
-			if (iSendResult == SOCKET_ERROR)
+	FILE* fp;
+	errno_t err;
+	char fileName[20] = "B.png";
+	err = fopen_s(&fp, fileName, "b | a");		// 파일 열기 오류 검증 변수
+
+	if (err == 0)
+	{
+		cout << "File open success!: " << fileName << endl;
+		int iTest = fseek(fp, 0, SEEK_END);
+		if (iTest != 0)
+		{
+			cout << "Error! failed to calculate: " << fileName << endl;
+			return 1;
+		}
+		int count = ftell(fp);
+		// 파일 크기를 카운트 변수에 저장하고
+		while (count >= 0)
+		{
+			iResult = recv(clientSocket, buf, bufLen, 0);
+			if (iResult > 0)
 			{
-				cout << "send failed: " << WSAGetLastError() << endl;
+				cout << "file receiving.. ";
+				// 버퍼에 파일 정보를 담으며 받은 크기 만큼 카운트 변수를 감소
+			}
+			else if (iResult == 0)
+				cout << "Connection closing.. \n";
+			else
+			{
+				cout << "recv failed with error: " << WSAGetLastError() << endl;
 				closesocket(clientSocket);
 				WSACleanup();
 				return 1;
 			}
-			cout << "Bytes sent: " << iSendResult << endl;
 		}
-		else if (iResult == 0)
-			cout << "Connection closing...\n";
-		else
-		{
-			cout << "recv failed: " << WSAGetLastError() << endl;
-			closesocket(clientSocket);
-			WSACleanup();
-			return 1;
-		}
-	} while (iResult > 0);
-	*/
-
-
-	// 파일 전송
-	int success = 0;
-	do
+	}
+	else
 	{
-		// 전송할 파일 정보
-		const char* fName = "Test.txt";
-		char sendBuf[DEFAULT_BUFLEN];
-		errno_t err;
-		cout << "Server send " << fName << " to the client" << endl;
-
-		// 읽기 전용으로 파일 열기
-		FILE* fp;
-		err = fopen_s(&fp, fName, "r");
-		if (err == 0)
-		{
-			cout << "Open success: " << fName << endl;
-			return 1;
-		}
-		else
-		{
-			cout << "failed opening: " << fName << endl;
-		}
-
-		ZeroMemory(sendBuf, DEFAULT_BUFLEN);
-		int fBlockSize;
-		
-		// 파일 읽으며 전송
-		while (fBlockSize = fread(sendBuf, sizeof(char), DEFAULT_BUFLEN, fp) > 0)
-		{
-			if (send(clientSocket, sendBuf, fBlockSize, 0) < 0)
-			{
-				cout << "Error! failed to send file : " << fName << endl;
-				return 1;
-			}
-			else if (fBlockSize)
-				break;
-			ZeroMemory(sendBuf, DEFAULT_BUFLEN);
-		}
-		cout << "Success!\n";
-		success = 1;
-		closesocket(clientSocket);
-		cout << "Connection closing.. \n";
-		fclose(fp);
-	} while (success > 0);
+		cout << "Opening: " << fileName << " failed with error!\n";
+		return 1;
+	}
 
 	// 더이상 전송이 없다면 종료
 	iResult = shutdown(clientSocket, SD_SEND);
