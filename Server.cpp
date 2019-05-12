@@ -4,9 +4,10 @@
 #include<iostream>
 #include<filesystem>
 #include<fstream>
+#include<sal.h>
 
 #define DEFAULT_PORT "9000"
-#define DEFAULT_BUFLEN 512
+#define DEFAULT_BUFLEN 2048
 
 #pragma comment (lib, "ws2_32.lib")		
 
@@ -111,44 +112,43 @@ int main()
 
 	FILE* fp;
 	errno_t err;
-	char fileName[20] = "B.png";
-	err = fopen_s(&fp, fileName, "b | a");		// 파일 열기 오류 검증 변수
+	char fileName[20] = "kasger01.jpg";
+	err = fopen_s(&fp, fileName, "wb");		// 파일 열기 오류 검증 변수
 
 	if (err == 0)
 	{
 		cout << "File open success!: " << fileName << endl;
-		int iTest = fseek(fp, 0, SEEK_END);
-		if (iTest != 0)
+		do
 		{
-			cout << "Error! failed to calculate: " << fileName << endl;
-			return 1;
-		}
-		int count = ftell(fp);
-		// 파일 크기를 카운트 변수에 저장하고
-		while (count >= 0)
-		{
+			ZeroMemory(buf, bufLen);
 			iResult = recv(clientSocket, buf, bufLen, 0);
 			if (iResult > 0)
 			{
-				cout << "file receiving.. ";
+				cout << "file receiving.. \n";
 				// 버퍼에 파일 정보를 담으며 받은 크기 만큼 카운트 변수를 감소
+				fwrite(buf, sizeof(char), bufLen, fp);
 			}
-			else if (iResult == 0)
-				cout << "Connection closing.. \n";
 			else
 			{
-				cout << "recv failed with error: " << WSAGetLastError() << endl;
+				fseek(fp, 0, SEEK_END);
+				float total = ftell(fp);
+
+				cout << "Total received: " << total << endl;
+				cout << "Receiving failed with error: " << WSAGetLastError() << endl;
 				closesocket(clientSocket);
 				WSACleanup();
 				return 1;
 			}
-		}
+
+		} while (iResult != 0);
+
 	}
 	else
 	{
-		cout << "Opening: " << fileName << " failed with error!\n";
+		cout << "Opening " << fileName << " failed with error!\n";
 		return 1;
 	}
+	
 
 	// 더이상 전송이 없다면 종료
 	iResult = shutdown(clientSocket, SD_SEND);

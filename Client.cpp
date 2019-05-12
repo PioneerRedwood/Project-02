@@ -10,7 +10,7 @@ using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
 
-#define DEFAULT_BUFLEN 512
+#define DEFAULT_BUFLEN 2048
 #define DEFAULT_PORT "9000"
 
 int main()
@@ -65,16 +65,17 @@ int main()
 
 	freeaddrinfo(result);
 
+	cout << "We'll start to sending a file.\n";
 	char buf[DEFAULT_BUFLEN];
 	int bufLen = DEFAULT_BUFLEN;
 
 	// 파일 송신
 	FILE* fp;
 	errno_t err;
-	char fileName[20] = "A.png";
-	err = fopen_s(&fp, fileName, "r");
+	char fileName[20] = "Kasger.jpg";
+	err = fopen_s(&fp, fileName, "rb");		// 파일 열기 오류 검증 변수
 
-	if (err != 0)
+	if (err == 0)
 	{
 		cout << "File open success!: " << fileName << endl;
 		// 파일 크기 계산
@@ -85,31 +86,34 @@ int main()
 			return 1;
 		}
 		int count = ftell(fp);		// 파일 크기 저장
+		cout << fileName << " size: " << count << endl;
 		fseek(fp, 0L, SEEK_SET);	// 파일 포인터 처음으로 옮김
-		while (count >= 0)
+		
+		do
 		{
-			// 파일 전송
 			ZeroMemory(buf, bufLen);
-			// 파일 내용을 읽어서 버퍼에 담기
-			fread(buf, sizeof(char), bufLen, fp);
-			// 전송
 			iResult = send(ConnectSocket, buf, bufLen, 0);
+			
+			// 전송
 			if (iResult > 0)
 			{
-				cout << "file sending.. ";
-				// 루프 탈출을 위해 버퍼 크기 만큼 카운트 변수를 감소
-				count = count - bufLen;
+				fread(buf, sizeof(char), bufLen, fp);
+				cout << "file sending.. \n";
+				count -= iResult;
 			}
-			else if (iResult == 0)
-				cout << "Connection closing.. \n";
 			else
 			{
-				cout << "recv failed with error: " << WSAGetLastError() << endl;
+				cout << "Sending failed with error: " << WSAGetLastError() << endl;
 				closesocket(ConnectSocket);
 				WSACleanup();
 				return 1;
 			}
-		}
+		} while (count >= 0);
+	}
+	else
+	{
+		cout << "Opening " << fileName << " failed with error!\n";
+		return 1;
 	}
 	
 
