@@ -6,17 +6,20 @@
 #include<ws2tcpip.h>
 #include<winsock2.h>
 #include<filesystem>
+#include<Windows.h>
 using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
 
-#define DEFAULT_BUFLEN 2048
+#define DEFAULT_BUFLEN 4096
 #define DEFAULT_PORT "9000"
 
 int main()
 {
 	WSADATA wsaData;
 	int iResult;
+	char buf[DEFAULT_BUFLEN];
+	int bufLen = DEFAULT_BUFLEN;
 
 	struct addrinfo* result = NULL, * ptr = NULL, hints;
 
@@ -66,13 +69,29 @@ int main()
 	freeaddrinfo(result);
 
 	cout << "We'll start to sending a file.\n";
-	char buf[DEFAULT_BUFLEN];
-	int bufLen = DEFAULT_BUFLEN;
+
+	iResult = send(ConnectSocket, buf, bufLen, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cout << "failed send SYN: " << WSAGetLastError() << endl;
+		closesocket(ConnectSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	iResult = recv(ConnectSocket, buf, bufLen, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cout << "failed recv SYN: " << WSAGetLastError() << endl;
+		closesocket(ConnectSocket);
+		WSACleanup();
+		return 1;
+	}
 
 	// 파일 송신
 	FILE* fp;
 	errno_t err;
-	char fileName[20] = "Kasger.jpg";
+	char fileName[20] = "A.mp4";
 	err = fopen_s(&fp, fileName, "rb");		// 파일 열기 오류 검증 변수
 
 	if (err == 0)
@@ -85,21 +104,28 @@ int main()
 			cout << "Error! failed to calculate: " << fileName << "'s Size..\n";
 			return 1;
 		}
-		int count = ftell(fp);		// 파일 크기 저장
-		cout << fileName << " size: " << count << endl;
-		fseek(fp, 0L, SEEK_SET);	// 파일 포인터 처음으로 옮김
+		double fileSize = ftell(fp);		// 파일 크기 저장
+		cout << fileName << " size: " << fileSize << endl;
+		fseek(fp, 0, SEEK_SET);	// 파일 포인터 처음으로 옮김
+		int present;
+		double total = fileSize;
+
+		ZeroMemory(buf, bufLen);
 		
 		do
 		{
-			ZeroMemory(buf, bufLen);
+			Sleep(10);
+			
+			fread(buf, sizeof(char), bufLen, fp);
 			iResult = send(ConnectSocket, buf, bufLen, 0);
 			
 			// 전송
 			if (iResult > 0)
 			{
-				fread(buf, sizeof(char), bufLen, fp);
 				cout << "file sending.. \n";
-				count -= iResult;
+				fileSize -= iResult;
+				present = ftell(fp);
+				cout << "Sent: " << iResult	<< "present: " << (present / total) * 100 << "% " << endl;
 			}
 			else
 			{
@@ -108,7 +134,7 @@ int main()
 				WSACleanup();
 				return 1;
 			}
-		} while (count >= 0);
+ 		} while (fileSize > 0);
 	}
 	else
 	{

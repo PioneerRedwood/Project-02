@@ -4,10 +4,9 @@
 #include<iostream>
 #include<filesystem>
 #include<fstream>
-#include<sal.h>
 
 #define DEFAULT_PORT "9000"
-#define DEFAULT_BUFLEN 2048
+#define DEFAULT_BUFLEN 4096
 
 #pragma comment (lib, "ws2_32.lib")		
 
@@ -16,6 +15,9 @@ int main()
 {
 	WSADATA wsadata;
 	int iResult;
+
+	char buf[DEFAULT_BUFLEN];
+	int bufLen = DEFAULT_BUFLEN;
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsadata);
 	if (iResult != 0)
@@ -105,14 +107,29 @@ int main()
 	}
 
 	closesocket(ListenSocket);
-	
-	// 파일 전송
-	char buf[DEFAULT_BUFLEN];
-	int bufLen = DEFAULT_BUFLEN;
 
+	iResult = recv(clientSocket, buf, bufLen, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cout << "failed recv SYN: " << WSAGetLastError() << endl;
+		closesocket(clientSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	iResult = send(clientSocket, buf, bufLen, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		cout << "failed send ACK: " << WSAGetLastError() << endl;
+		closesocket(clientSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	// 파일 전송
 	FILE* fp;
 	errno_t err;
-	char fileName[20] = "kasger01.jpg";
+	char fileName[20] = "B.mp4";
 	err = fopen_s(&fp, fileName, "wb");		// 파일 열기 오류 검증 변수
 
 	if (err == 0)
@@ -120,20 +137,16 @@ int main()
 		cout << "File open success!: " << fileName << endl;
 		do
 		{
-			ZeroMemory(buf, bufLen);
+			Sleep(10);
 			iResult = recv(clientSocket, buf, bufLen, 0);
+
 			if (iResult > 0)
 			{
 				cout << "file receiving.. \n";
-				// 버퍼에 파일 정보를 담으며 받은 크기 만큼 카운트 변수를 감소
 				fwrite(buf, sizeof(char), bufLen, fp);
 			}
 			else
 			{
-				fseek(fp, 0, SEEK_END);
-				float total = ftell(fp);
-
-				cout << "Total received: " << total << endl;
 				cout << "Receiving failed with error: " << WSAGetLastError() << endl;
 				closesocket(clientSocket);
 				WSACleanup();
