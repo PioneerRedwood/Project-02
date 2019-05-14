@@ -108,25 +108,6 @@ int main()
 
 	closesocket(ListenSocket);
 
-	iResult = recv(clientSocket, buf, bufLen, 0);
-	if (iResult == SOCKET_ERROR)
-	{
-		cout << "failed recv SYN: " << WSAGetLastError() << endl;
-		closesocket(clientSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	iResult = send(clientSocket, buf, bufLen, 0);
-	if (iResult == SOCKET_ERROR)
-	{
-		cout << "failed send ACK: " << WSAGetLastError() << endl;
-		closesocket(clientSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	// 파일 전송
 	FILE* fp;
 	errno_t err;
 	char fileName[20] = "B.mp4";
@@ -137,7 +118,26 @@ int main()
 		cout << "File open success!: " << fileName << endl;
 		do
 		{
-			Sleep(10);
+			// 요청 받기
+			iResult = recv(clientSocket, buf, bufLen, 0);
+			if (iResult == SOCKET_ERROR)
+			{
+				cout << "failed recv SYN: " << WSAGetLastError() << endl;
+				closesocket(clientSocket);
+				WSACleanup();
+				return 1;
+			}
+
+			// 응답 전송
+			iResult = send(clientSocket, buf, bufLen, 0);
+			if (iResult == SOCKET_ERROR)
+			{
+				cout << "failed send ACK: " << WSAGetLastError() << endl;
+				closesocket(clientSocket);
+				WSACleanup();
+				return 1;
+			}
+
 			iResult = recv(clientSocket, buf, bufLen, 0);
 
 			if (iResult > 0)
@@ -154,7 +154,6 @@ int main()
 			}
 
 		} while (iResult != 0);
-
 	}
 	else
 	{

@@ -69,26 +69,7 @@ int main()
 	freeaddrinfo(result);
 
 	cout << "We'll start to sending a file.\n";
-
-	iResult = send(ConnectSocket, buf, bufLen, 0);
-	if (iResult == SOCKET_ERROR)
-	{
-		cout << "failed send SYN: " << WSAGetLastError() << endl;
-		closesocket(ConnectSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	iResult = recv(ConnectSocket, buf, bufLen, 0);
-	if (iResult == SOCKET_ERROR)
-	{
-		cout << "failed recv SYN: " << WSAGetLastError() << endl;
-		closesocket(ConnectSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	// 파일 송신
+	
 	FILE* fp;
 	errno_t err;
 	char fileName[20] = "A.mp4";
@@ -104,17 +85,34 @@ int main()
 			cout << "Error! failed to calculate: " << fileName << "'s Size..\n";
 			return 1;
 		}
-		double fileSize = ftell(fp);		// 파일 크기 저장
+		double fileSize = ftell(fp);		
 		cout << fileName << " size: " << fileSize << endl;
-		fseek(fp, 0, SEEK_SET);	// 파일 포인터 처음으로 옮김
+		fseek(fp, 0, SEEK_SET);
 		int present;
 		double total = fileSize;
 
 		ZeroMemory(buf, bufLen);
-		
 		do
 		{
-			Sleep(10);
+			// 요청 전송
+			iResult = send(ConnectSocket, buf, bufLen, 0);
+			if (iResult == SOCKET_ERROR)
+			{
+				cout << "failed send SYN: " << WSAGetLastError() << endl;
+				closesocket(ConnectSocket);
+				WSACleanup();
+				return 1;
+			}
+
+			// 응답 받기
+			iResult = recv(ConnectSocket, buf, bufLen, 0);
+			if (iResult == SOCKET_ERROR)
+			{
+				cout << "failed recv SYN: " << WSAGetLastError() << endl;
+				closesocket(ConnectSocket);
+				WSACleanup();
+				return 1;
+			}
 			
 			fread(buf, sizeof(char), bufLen, fp);
 			iResult = send(ConnectSocket, buf, bufLen, 0);
@@ -125,7 +123,7 @@ int main()
 				cout << "file sending.. \n";
 				fileSize -= iResult;
 				present = ftell(fp);
-				cout << "Sent: " << iResult	<< "present: " << (present / total) * 100 << "% " << endl;
+				cout << "Sent: " << iResult	<< "  present: " << (present / total) * 100 << "% " << endl;
 			}
 			else
 			{
