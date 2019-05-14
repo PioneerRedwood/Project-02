@@ -11,7 +11,7 @@ using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
 
-#define DEFAULT_BUFLEN 4096
+#define DEFAULT_BUFLEN 2048
 #define DEFAULT_PORT "9000"
 
 int main()
@@ -88,14 +88,14 @@ int main()
 		double fileSize = ftell(fp);		
 		cout << fileName << " size: " << fileSize << endl;
 		fseek(fp, 0, SEEK_SET);
-		int present;
+		double present = 0;
 		double total = fileSize;
+		char sbuf[10] = "";
 
-		ZeroMemory(buf, bufLen);
 		do
 		{
 			// 요청 전송
-			iResult = send(ConnectSocket, buf, bufLen, 0);
+			iTest = send(ConnectSocket, sbuf, 10, 0);
 			if (iResult == SOCKET_ERROR)
 			{
 				cout << "failed send SYN: " << WSAGetLastError() << endl;
@@ -105,15 +105,22 @@ int main()
 			}
 
 			// 응답 받기
-			iResult = recv(ConnectSocket, buf, bufLen, 0);
+			iTest = recv(ConnectSocket, sbuf, 10, 0);
 			if (iResult == SOCKET_ERROR)
 			{
-				cout << "failed recv SYN: " << WSAGetLastError() << endl;
+				cout << "failed recv ACK: " << WSAGetLastError() << endl;
 				closesocket(ConnectSocket);
 				WSACleanup();
 				return 1;
 			}
 			
+			if ((total - present) < bufLen )
+			{
+				fread(buf, sizeof(char), total - present, 0);
+				iResult = send(ConnectSocket, buf, total - present, 0);
+				break;
+			}
+
 			fread(buf, sizeof(char), bufLen, fp);
 			iResult = send(ConnectSocket, buf, bufLen, 0);
 			

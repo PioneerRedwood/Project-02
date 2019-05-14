@@ -6,7 +6,7 @@
 #include<fstream>
 
 #define DEFAULT_PORT "9000"
-#define DEFAULT_BUFLEN 4096
+#define DEFAULT_BUFLEN 2048
 
 #pragma comment (lib, "ws2_32.lib")		
 
@@ -116,10 +116,12 @@ int main()
 	if (err == 0)
 	{
 		cout << "File open success!: " << fileName << endl;
+		
+		char sbuf[10];
 		do
 		{
 			// 요청 받기
-			iResult = recv(clientSocket, buf, bufLen, 0);
+			int iTest = recv(clientSocket, sbuf, 10, 0);
 			if (iResult == SOCKET_ERROR)
 			{
 				cout << "failed recv SYN: " << WSAGetLastError() << endl;
@@ -129,7 +131,7 @@ int main()
 			}
 
 			// 응답 전송
-			iResult = send(clientSocket, buf, bufLen, 0);
+			iTest = send(clientSocket, sbuf, 10, 0);
 			if (iResult == SOCKET_ERROR)
 			{
 				cout << "failed send ACK: " << WSAGetLastError() << endl;
@@ -144,6 +146,7 @@ int main()
 			{
 				cout << "file receiving.. \n";
 				fwrite(buf, sizeof(char), bufLen, fp);
+				cout << "received: " << iResult << "byte (s)" << endl;
 			}
 			else
 			{
