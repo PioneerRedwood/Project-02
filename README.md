@@ -6,4 +6,4 @@ Project #2
 4. If file A and file B are same is OK. 
 Done- Good Luck!
 
-+ Verifying with file A & B is same.
++ Verifying: Both file A and B must be same.
