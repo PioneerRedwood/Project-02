@@ -5,3 +5,5 @@ Project #2
 3. At a Server, receive a packet about this file and store it named B at random folder in HDD. 
 4. If file A and file B are same is OK. 
 Done- Good Luck!
+
++ Verifing with file A & B is same.
