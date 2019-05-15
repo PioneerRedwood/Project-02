@@ -90,42 +90,41 @@ int main()
 		fseek(fp, 0, SEEK_SET);
 		double present = 0;
 		double total = fileSize;
-		char sbuf[10] = "";
 
 		do
 		{
-			// 요청 전송
-			iTest = send(ConnectSocket, sbuf, 10, 0);
-			if (iResult == SOCKET_ERROR)
+			if (int iTest = recv(ConnectSocket, buf, bufLen, 0) == SOCKET_ERROR)
 			{
-				cout << "failed send SYN: " << WSAGetLastError() << endl;
+				cout << "failed recv " << WSAGetLastError() << endl;
 				closesocket(ConnectSocket);
 				WSACleanup();
 				return 1;
 			}
-
-			// 응답 받기
-			iTest = recv(ConnectSocket, sbuf, 10, 0);
-			if (iResult == SOCKET_ERROR)
-			{
-				cout << "failed recv ACK: " << WSAGetLastError() << endl;
-				closesocket(ConnectSocket);
-				WSACleanup();
-				return 1;
-			}
+			ZeroMemory(buf, bufLen);
 			
-			if ((total - present) < bufLen )
+			if ((total - present) < bufLen)
 			{
-				fread(buf, sizeof(char), total - present, 0);
-				iResult = send(ConnectSocket, buf, total - present, 0);
-				break;
+				fread(buf, sizeof(char), total - present, fp);
+				if ((iResult = send(ConnectSocket, buf, total - present, 0)) > 0)
+				{
+					cout << "file sending.. \n";
+					fileSize -= iResult;
+					present = ftell(fp);
+					cout << "Sent: " << iResult << "  present: " << (present / total) * 100 << "% " << endl;
+					break;
+				}
+				else
+				{
+					cout << "Sending failed with error: " << WSAGetLastError() << endl;
+					closesocket(ConnectSocket);
+					WSACleanup();
+					return 1;
+				}
 			}
 
 			fread(buf, sizeof(char), bufLen, fp);
-			iResult = send(ConnectSocket, buf, bufLen, 0);
 			
-			// 전송
-			if (iResult > 0)
+			if ((iResult = send(ConnectSocket, buf, bufLen, 0)) > 0)
 			{
 				cout << "file sending.. \n";
 				fileSize -= iResult;

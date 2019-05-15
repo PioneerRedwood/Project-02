@@ -112,37 +112,25 @@ int main()
 	errno_t err;
 	char fileName[20] = "B.mp4";
 	err = fopen_s(&fp, fileName, "wb");		// 파일 열기 오류 검증 변수
+	int iTest;
 
 	if (err == 0)
 	{
 		cout << "File open success!: " << fileName << endl;
 		
-		char sbuf[10];
 		do
 		{
-			// 요청 받기
-			int iTest = recv(clientSocket, sbuf, 10, 0);
-			if (iResult == SOCKET_ERROR)
+			iTest = send(clientSocket, buf, bufLen, 0);
+			if (iTest == SOCKET_ERROR)
 			{
-				cout << "failed recv SYN: " << WSAGetLastError() << endl;
+				cout << "failed send " << WSAGetLastError() << endl;
 				closesocket(clientSocket);
 				WSACleanup();
 				return 1;
 			}
+			ZeroMemory(buf, bufLen);
 
-			// 응답 전송
-			iTest = send(clientSocket, sbuf, 10, 0);
-			if (iResult == SOCKET_ERROR)
-			{
-				cout << "failed send ACK: " << WSAGetLastError() << endl;
-				closesocket(clientSocket);
-				WSACleanup();
-				return 1;
-			}
-
-			iResult = recv(clientSocket, buf, bufLen, 0);
-
-			if (iResult > 0)
+			if ((iResult = recv(clientSocket, buf, bufLen, 0)) > 0)
 			{
 				cout << "file receiving.. \n";
 				fwrite(buf, sizeof(char), bufLen, fp);
@@ -156,7 +144,7 @@ int main()
 				return 1;
 			}
 
-		} while (iResult != 0);
+		} while (iResult != 0 || iTest != 0);
 	}
 	else
 	{
