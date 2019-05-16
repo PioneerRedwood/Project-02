@@ -11,7 +11,7 @@ using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
 
-#define DEFAULT_BUFLEN 2048
+#define DEFAULT_BUFLEN 2096
 #define DEFAULT_PORT "9000"
 
 int main()
@@ -111,7 +111,6 @@ int main()
 					fileSize -= iResult;
 					present = ftell(fp);
 					cout << "Sent: " << iResult << "  present: " << (present / total) * 100 << "% " << endl;
-					return 1;
 				}
 				else
 				{
@@ -141,7 +140,7 @@ int main()
 			}
 			
 
- 		} while (fileSize > 0);
+ 		} while (present != total);
 	}
 	else
 	{

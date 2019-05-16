@@ -6,7 +6,7 @@
 #include<fstream>
 
 #define DEFAULT_PORT "9000"
-#define DEFAULT_BUFLEN 2048
+#define DEFAULT_BUFLEN 2096
 
 #pragma comment (lib, "ws2_32.lib")		
 
@@ -120,6 +120,7 @@ int main()
 		
 		do
 		{
+			ZeroMemory(buf, bufLen);
 			iTest = send(clientSocket, buf, bufLen, 0);
 			if (iTest == SOCKET_ERROR)
 			{
@@ -128,13 +129,27 @@ int main()
 				WSACleanup();
 				return 1;
 			}
-			ZeroMemory(buf, bufLen);
 
 			if ((iResult = recv(clientSocket, buf, bufLen, 0)) > 0)
 			{
 				cout << "file receiving.. \n";
-				fwrite(buf, sizeof(char), bufLen, fp);
-				cout << "received: " << iResult << "byte (s)" << endl;
+				if (iResult < bufLen)
+				{
+					int count = 0;
+					for (int i = 0; i < iResult; i++)
+					{
+						if (buf[i] != '\0')
+							count++;
+					}
+					fwrite(buf, sizeof(char), count, fp);
+					cout << "received: " << iResult << "byte (s)" << endl;
+					break;
+				}
+				else
+				{
+					fwrite(buf, sizeof(char), bufLen, fp);
+					cout << "received: " << iResult << "byte (s)" << endl;
+				}
 			}
 			else
 			{
@@ -144,7 +159,7 @@ int main()
 				return 1;
 			}
 
-		} while (iResult != 0 || iTest != 0);
+		} while (iResult >= 0);
 	}
 	else
 	{
@@ -162,8 +177,11 @@ int main()
 		WSACleanup();
 		return 1;
 	}
-
-	closesocket(clientSocket);
-	WSACleanup();
-	return 0;
+	else
+	{
+		cout << "shutdown connection with " << host << " on " << service << endl;
+		closesocket(clientSocket);
+		WSACleanup();
+		return 0;
+	}
 }
