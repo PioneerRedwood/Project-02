@@ -110,7 +110,7 @@ int main()
 
 	FILE* fp;
 	errno_t err;
-	char fileName[20] = "B.mp4";
+	char fileName[20] = "Bdata";
 	err = fopen_s(&fp, fileName, "wb");		// 파일 열기 오류 검증 변수
 	int iTest;
 

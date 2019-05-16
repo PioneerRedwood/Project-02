@@ -72,7 +72,7 @@ int main()
 	
 	FILE* fp;
 	errno_t err;
-	char fileName[20] = "A.mp4";
+	char fileName[20] = "Adata";
 	err = fopen_s(&fp, fileName, "rb");		// 파일 열기 오류 검증 변수
 
 	if (err == 0)
@@ -90,10 +90,10 @@ int main()
 		fseek(fp, 0, SEEK_SET);
 		double present = 0;
 		double total = fileSize;
-
+		
 		do
 		{
-			if (int iTest = recv(ConnectSocket, buf, bufLen, 0) == SOCKET_ERROR)
+			if (iTest = recv(ConnectSocket, buf, bufLen, 0) == SOCKET_ERROR)
 			{
 				cout << "failed recv " << WSAGetLastError() << endl;
 				closesocket(ConnectSocket);
@@ -101,7 +101,7 @@ int main()
 				return 1;
 			}
 			ZeroMemory(buf, bufLen);
-			
+
 			if ((total - present) < bufLen)
 			{
 				fread(buf, sizeof(char), total - present, fp);
@@ -111,7 +111,7 @@ int main()
 					fileSize -= iResult;
 					present = ftell(fp);
 					cout << "Sent: " << iResult << "  present: " << (present / total) * 100 << "% " << endl;
-					break;
+					return 1;
 				}
 				else
 				{
@@ -121,23 +121,26 @@ int main()
 					return 1;
 				}
 			}
-
-			fread(buf, sizeof(char), bufLen, fp);
-			
-			if ((iResult = send(ConnectSocket, buf, bufLen, 0)) > 0)
-			{
-				cout << "file sending.. \n";
-				fileSize -= iResult;
-				present = ftell(fp);
-				cout << "Sent: " << iResult	<< "  present: " << (present / total) * 100 << "% " << endl;
-			}
 			else
 			{
-				cout << "Sending failed with error: " << WSAGetLastError() << endl;
-				closesocket(ConnectSocket);
-				WSACleanup();
-				return 1;
+				fread(buf, sizeof(char), bufLen, fp);
+				if ((iResult = send(ConnectSocket, buf, bufLen, 0)) > 0)
+				{
+					cout << "file sending.. \n";
+					fileSize -= iResult;
+					present = ftell(fp);
+					cout << "Sent: " << iResult << "  present: " << (present / total) * 100 << "% " << endl;
+				}
+				else
+				{
+					cout << "Sending failed with error: " << WSAGetLastError() << endl;
+					closesocket(ConnectSocket);
+					WSACleanup();
+					return 1;
+				}
 			}
+			
+
  		} while (fileSize > 0);
 	}
 	else
