@@ -5,8 +5,8 @@
 #include<filesystem>
 #include<fstream>
 
+#define DEFAULT_BUFLEN 2048
 #define DEFAULT_PORT "9000"
-#define DEFAULT_BUFLEN 2096
 
 #pragma comment (lib, "ws2_32.lib")		
 
@@ -130,6 +130,7 @@ int main()
 				return 1;
 			}
 
+			ZeroMemory(buf, bufLen);
 			if ((iResult = recv(clientSocket, buf, bufLen, 0)) > 0)
 			{
 				cout << "file receiving.. \n";
@@ -142,13 +143,13 @@ int main()
 							count++;
 					}
 					fwrite(buf, sizeof(char), count, fp);
-					cout << "received: " << iResult << "byte (s)" << endl;
+					cout << "received: " << iResult << " byte (s)" << endl;
 					break;
 				}
 				else
 				{
 					fwrite(buf, sizeof(char), bufLen, fp);
-					cout << "received: " << iResult << "byte (s)" << endl;
+					cout << "received: " << iResult << " byte (s)" << endl;
 				}
 			}
 			else

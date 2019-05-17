@@ -11,7 +11,7 @@ using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
 
-#define DEFAULT_BUFLEN 2096
+#define DEFAULT_BUFLEN 2048
 #define DEFAULT_PORT "9000"
 
 int main()
@@ -108,9 +108,29 @@ int main()
 				if ((iResult = send(ConnectSocket, buf, total - present, 0)) > 0)
 				{
 					cout << "file sending.. \n";
-					fileSize -= iResult;
-					present = ftell(fp);
-					cout << "Sent: " << iResult << "  present: " << (present / total) * 100 << "% " << endl;
+					if (iResult < (total - present))
+					{
+						fileSize -= iResult;
+						present = ftell(fp);
+						cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
+
+						int dif = (total - present) - iResult;
+						ZeroMemory(buf, bufLen);
+						fseek(fp, -dif, 1);
+						fread(buf, sizeof(char), dif, fp);
+						if (iResult = send(ConnectSocket, buf, dif, 0) > 0)
+						{
+							fileSize -= iResult;
+							present = ftell(fp);
+							cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
+						}
+					}
+					else
+					{
+						fileSize -= iResult;
+						present = ftell(fp);
+						cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
+					}
 				}
 				else
 				{
@@ -126,9 +146,29 @@ int main()
 				if ((iResult = send(ConnectSocket, buf, bufLen, 0)) > 0)
 				{
 					cout << "file sending.. \n";
-					fileSize -= iResult;
-					present = ftell(fp);
-					cout << "Sent: " << iResult << "  present: " << (present / total) * 100 << "% " << endl;
+					if (iResult < bufLen)
+					{	
+						fileSize -= iResult;
+						present = ftell(fp);
+						cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
+
+						int dif = bufLen - iResult;
+						ZeroMemory(buf, bufLen);
+						fseek(fp, -dif, 1);
+						fread(buf, sizeof(char), dif, fp);
+						if (iResult = send(ConnectSocket, buf, dif, 0) > 0)
+						{
+							fileSize -= iResult;
+							present = ftell(fp);
+							cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
+						}
+					}
+					else
+					{						
+						fileSize -= iResult;
+						present = ftell(fp);
+						cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
+					}
 				}
 				else
 				{

@@ -8,8 +8,8 @@ int main()
 	FILE* f1;
 	FILE* f2;
 
-	char f1Name[20] = "client.txt";
-	char f2Name[20] = "server.txt";
+	char f1Name[20] = "Adata";
+	char f2Name[20] = "Bdata";
 
 	errno_t err1, err2;
 	err1 = fopen_s(&f1, f1Name, "rb");
@@ -64,12 +64,12 @@ int main()
 				else if ((feof(f1) != 0) && (feof(f2) != 0))	// 두개의 파일 모두 끝에 도달한 경우
 				{
 					cout << "\nSame " << f1Name << " and " << f2Name << endl;
-					cout << "count: " << count << endl;
+					cout << "count: " << count << " byte (s) read.\n";
 					return 0;
 				}
 			}
 			cout << "\nSame " << f1Name << " and " << f2Name << endl;
-			cout << "count: " << count << endl;
+			cout << count << " byte (s) read.\n";
 		}
 		else
 		{
