@@ -114,13 +114,13 @@ int main()
 	err = fopen_s(&fp, fileName, "wb");		// 파일 열기 오류 검증 변수
 	int iTest;
 
+
 	if (err == 0)
 	{
 		cout << "File open success!: " << fileName << endl;
 		
 		do
 		{
-			ZeroMemory(buf, bufLen);
 			iTest = send(clientSocket, buf, bufLen, 0);
 			if (iTest == SOCKET_ERROR)
 			{
@@ -136,15 +136,9 @@ int main()
 				cout << "file receiving.. \n";
 				if (iResult < bufLen)
 				{
-					int count = 0;
-					for (int i = 0; i < iResult; i++)
-					{
-						if (buf[i] != '\0')
-							count++;
-					}
-					fwrite(buf, sizeof(char), count, fp);
+					fwrite(buf, sizeof(char), iResult, fp);
 					cout << "received: " << iResult << " byte (s)" << endl;
-					break;
+					iResult = -1;
 				}
 				else
 				{

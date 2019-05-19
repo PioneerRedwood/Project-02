@@ -6,7 +6,7 @@
 #include<ws2tcpip.h>
 #include<winsock2.h>
 #include<filesystem>
-#include<Windows.h>
+
 using namespace std;
 
 #pragma comment (lib, "Ws2_32.lib")
@@ -114,11 +114,9 @@ int main()
 						present = ftell(fp);
 						cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
 
-						int dif = (total - present) - iResult;
 						ZeroMemory(buf, bufLen);
-						fseek(fp, -dif, 1);
-						fread(buf, sizeof(char), dif, fp);
-						if (iResult = send(ConnectSocket, buf, dif, 0) > 0)
+						fread(buf, sizeof(char), (total - present), fp);
+						if (iResult = send(ConnectSocket, buf, (total - present), 0) > 0)
 						{
 							fileSize -= iResult;
 							present = ftell(fp);
@@ -152,11 +150,9 @@ int main()
 						present = ftell(fp);
 						cout << "Sent: " << iResult << " byte (s)  present: " << (present / total) * 100 << "% " << endl;
 
-						int dif = bufLen - iResult;
 						ZeroMemory(buf, bufLen);
-						fseek(fp, -dif, 1);
-						fread(buf, sizeof(char), dif, fp);
-						if (iResult = send(ConnectSocket, buf, dif, 0) > 0)
+						fread(buf, sizeof(char), (total - present), fp);
+						if (iResult = send(ConnectSocket, buf, (total - present), 0) > 0)
 						{
 							fileSize -= iResult;
 							present = ftell(fp);

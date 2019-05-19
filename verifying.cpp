@@ -35,11 +35,10 @@ int main()
 			cout << f1Name << "'s Size " << f1Size << " | " << f2Name << "'s Size " << f2Size << "\n\n";
 			char a;
 			char b;
+			int n = 1;
 
 			while (count != f1Size)
 			{
-				cout << "test... \n";
-				
 				if ((feof(f1) == 0) && (feof(f2) == 0))			// 두 개의 파일이 모두 끝에 도달하지 않을 경우
 				{
 					a = fgetc(f1);
@@ -50,6 +49,11 @@ int main()
 						return 0;
 					}
 					count++;
+					if (count / 2048 == n*2048)
+					{
+						cout << "Conducting.. " << count / f1Size * 100 << " %\n";
+						n++;
+					}
 				}
 				else if ((feof(f1) != 0) && (feof(f2) == 0))	// 첫번째 파일만 끝에 도달할 경우
 				{
