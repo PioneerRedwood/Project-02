@@ -1,7 +1,11 @@
 #include<filesystem>
 #include<iostream>
+#include<string>
+#include<windows.h>
 
 using namespace std;
+
+#define bufLen 2048
 
 int main()
 {
@@ -33,26 +37,44 @@ int main()
 		if (f1Size == f2Size)
 		{
 			cout << f1Name << "'s Size " << f1Size << " | " << f2Name << "'s Size " << f2Size << "\n\n";
-			char a;
-			char b;
 			int n = 1;
+
+			char* buf1;
+			if ((buf1 = (char*) calloc(bufLen, sizeof(char))) == NULL)
+			{
+				cout << "failed calloc! buf1\n";
+				return 0;
+			}
+			char* buf2; 
+			if ((buf2 = (char*) malloc(bufLen * sizeof(char))) == NULL)
+			{
+				cout << "failed malloc buf2\n";
+				return 0;
+			}
 
 			while (count != f1Size)
 			{
 				if ((feof(f1) == 0) && (feof(f2) == 0))			// 두 개의 파일이 모두 끝에 도달하지 않을 경우
 				{
-					a = fgetc(f1);
-					b = fgetc(f2);
-					if (a != b)
+					memset(buf2, '\0', sizeof(buf2));
+
+					fread(buf1, sizeof(char), bufLen, f1);
+					fread(buf2, sizeof(char), bufLen, f2);
+					
+					if (memcmp(buf1, buf2, bufLen) != 0)
 					{
 						cout << "Not the same " << f1Name << " and " << f2Name << endl;
+						cout << "Count Num: " << count << "\n";
 						return 0;
 					}
-					count++;
-					if (count / 2048 == n*2048)
+					else
 					{
-						cout << "Conducting.. " << count / f1Size * 100 << " %\n";
-						n++;
+						count += bufLen;
+						if (count / 1024 == n * 1024)
+						{
+							cout << "Conducting.. " << count / f1Size * 100 << " %\n";
+							n++;
+						}
 					}
 				}
 				else if ((feof(f1) != 0) && (feof(f2) == 0))	// 첫번째 파일만 끝에 도달할 경우
@@ -72,6 +94,8 @@ int main()
 					return 0;
 				}
 			}
+			free(buf1);
+			free(buf2);
 			cout << "\nSame " << f1Name << " and " << f2Name << endl;
 			cout << count << " byte (s) read.\n";
 		}
