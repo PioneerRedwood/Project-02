@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define bufLen 2048
+#define bufLen 4096 * 4
 
 int main()
 {
@@ -77,27 +77,15 @@ int main()
 						}
 					}
 				}
-				else if ((feof(f1) != 0) && (feof(f2) == 0))	// 첫번째 파일만 끝에 도달할 경우
-				{
-					cout << "Not the same " << f1Name << " and " << f2Name << endl;
-					return 0;
-				}
-				else if ((feof(f1) == 0) && (feof(f2) != 0))	// 두번째 파일만 끝에 도달할 경우
-				{
-					cout << "Not the same " << f1Name << " and " << f2Name << endl;
-					return 0;
-				}
-				else if ((feof(f1) != 0) && (feof(f2) != 0))	// 두개의 파일 모두 끝에 도달한 경우
+				if (count >= f1Size)
 				{
 					cout << "\nSame " << f1Name << " and " << f2Name << endl;
-					cout << "count: " << count << " byte (s) read.\n";
-					return 0;
+					cout << count << " byte (s) read.\n";
+					break;
 				}
 			}
 			free(buf1);
 			free(buf2);
-			cout << "\nSame " << f1Name << " and " << f2Name << endl;
-			cout << count << " byte (s) read.\n";
 		}
 		else
 		{
@@ -110,5 +98,7 @@ int main()
 		cout << "failed opening file..\n";
 		return 0;
 	}
+	fclose(f1);
+	fclose(f2);
 	return 0;
 }
